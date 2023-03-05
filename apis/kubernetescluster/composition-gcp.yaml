@@ -1,0 +1,52 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: xkubernetesclusters.infrastructure.example.org
+  labels:
+    provider: gcp
+spec:
+  writeConnectionSecretsToNamespace: upbound-system
+  compositeTypeRef:
+    apiVersion: infrastructure.example.org/v1alpha1
+    kind: XKubernetesCluster
+  resources:
+    - base:
+        apiVersion: infrastructure.example.org/v1alpha1
+        kind: XNetwork
+      patches:
+        - fromFieldPath: spec.id
+          toFieldPath: spec.id
+        - fromFieldPath: spec.parameters.nodes.location
+          toFieldPath: spec.location
+    - base:
+        apiVersion: infrastructure.example.org/v1alpha1
+        kind: XManagedKubernetes
+      connectionDetails:
+        - fromConnectionSecretKey: kubeconfig
+      patches:
+        - fromFieldPath: spec.id
+          toFieldPath: spec.id
+        - fromFieldPath: metadata.uid
+          toFieldPath: spec.writeConnectionSecretToRef.name
+          transforms:
+            - type: string
+              string:
+                fmt: "%s-gke"
+        - fromFieldPath: spec.writeConnectionSecretToRef.namespace
+          toFieldPath: spec.writeConnectionSecretToRef.namespace
+        - fromFieldPath: spec.parameters.nodes.location
+          toFieldPath: spec.parameters.nodes.location
+        - fromFieldPath: spec.parameters.nodes.count
+          toFieldPath: spec.parameters.nodes.count
+        - fromFieldPath: spec.parameters.nodes.vmSize
+          toFieldPath: spec.parameters.nodes.vmSize
+        - fromFieldPath: spec.id
+          toFieldPath: spec.parameters.XNetworkSelector.matchLabels[networks.infrastructure.example.org/network-id]
+    - base:
+        apiVersion: infrastructure.example.org/v1alpha1
+        kind: XServices
+      patches:
+        - fromFieldPath: spec.id
+          toFieldPath: spec.providerConfigRef.name
+        - fromFieldPath: spec.parameters.services.operators.prometheus.version
+          toFieldPath: spec.operators.prometheus.version

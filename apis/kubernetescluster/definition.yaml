@@ -1,0 +1,76 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: CompositeResourceDefinition
+metadata:
+  name: xkubernetesclusters.infrastructure.example.org
+spec:
+  claimNames:
+    kind: KubernetesCluster
+    plural: kubernetesclusters
+  connectionSecretKeys:
+  - kubeconfig
+  group: infrastructure.example.org
+  names:
+    kind: XKubernetesCluster
+    plural: xkubernetesclusters
+  versions:
+  - name: v1alpha1
+    served: true
+    referenceable: true
+    schema:
+      openAPIV3Schema:
+        type: object
+        properties:
+          spec:
+            type: object
+            properties:
+              id:
+                type: string
+                description: ID of this Cluster that other objects will use to refer to it.
+                minLength: 1
+                # Maximum key length in GCP is 40 characters. We are setting a 34 character
+                # limit to accomodate the generated hash suffix ('-' + 5 chars).
+                maxLength: 34
+              parameters:
+                type: object
+                description: Cluster configuration parameters.
+                properties:
+                  nodes:
+                    type: object
+                    description: Cluster node configuration parameters.
+                    properties:
+                      count:
+                        type: integer
+                        description: Desired node count, from 1 to 100.
+                      vmSize:
+                        type: string
+                        description: "Size of the Virtual Machine (default: `e2-standard-4`)"
+                        enum:
+                          - '1 vCPU, 1 GB'
+                          - '2 vCPU, 8 GB'
+                          - '4 vCPU, 16 GB'
+                      location:
+                        type: string
+                        description: "Zone or region for the Virtual Machine (default: `us-west1-c`)"
+                    required:
+                    - count
+                    - vmSize
+                  services:
+                    type: object
+                    description: Services configuration parameters.
+                    properties:
+                      operators:
+                        type: object
+                        description: Configuration for operators.
+                        properties:
+                          prometheus:
+                            type: object
+                            description: Configuration for the Prometheus operator.
+                            properties:
+                              version:
+                                type: string
+                                description: Prometheus operator version to run.
+                required:
+                - nodes
+            required:
+            - id
+            - parameters
