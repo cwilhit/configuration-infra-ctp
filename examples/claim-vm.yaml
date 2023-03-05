@@ -1,0 +1,14 @@
+apiVersion: infrastructure.example.org/v1alpha1
+kind: VirtualMachine
+metadata:
+  namespace: default
+  name: my-test-vm
+spec:
+  compositionSelector:
+    matchLabels:
+      provider: gcp
+  id: my-test-vm-craig
+  parameters:
+    location: West US
+    operatingSystem: Linux (Ubuntu)
+    vmSize: '2 vCPU, 8 GB'

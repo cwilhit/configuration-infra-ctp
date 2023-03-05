@@ -1,0 +1,38 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: xvirtualmachines.infrastructure.example.org
+  labels:
+    provider: gcp
+spec:
+  compositeTypeRef:
+    apiVersion: infrastructure.example.org/v1alpha1
+    kind: XVirtualMachine
+  resources:
+    - base:
+        apiVersion: infrastructure.example.org/v1alpha1
+        kind: XNetwork
+      patches:
+        - fromFieldPath: spec.id
+          toFieldPath: spec.id
+        - fromFieldPath: spec.parameters.location
+          toFieldPath: spec.location
+      name: compositeNetGoogleVM
+    - base:
+        apiVersion: infrastructure.example.org/v1alpha1
+        kind: XMachine
+      patches:
+        - fromFieldPath: spec.id
+          toFieldPath: spec.id
+        - fromFieldPath: spec.id
+          toFieldPath: metadata.annotations[crossplane.io/external-name]
+        - fromFieldPath: spec.parameters.location
+          toFieldPath: spec.parameters.location
+        - fromFieldPath: spec.parameters.operatingSystem
+          toFieldPath: spec.parameters.operatingSystem
+        - fromFieldPath: spec.parameters.vmSize
+          toFieldPath: spec.parameters.vmSize
+        - fromFieldPath: spec.id
+          toFieldPath: spec.parameters.XNetworkSelector.matchLabels[networks.infrastructure.example.org/network-id]
+      name: compositeMachineGoogle
+      

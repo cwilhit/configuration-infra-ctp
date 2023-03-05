@@ -1,0 +1,28 @@
+apiVersion: meta.pkg.crossplane.io/v1
+kind: Configuration
+metadata:
+  name: configuration-infra-ctp
+  annotations:
+    meta.crossplane.io/maintainer: Craig Wilhite <craig@upbound.io>
+    meta.crossplane.io/source: github.com/upbound/configuration-infra-ctp
+    meta.crossplane.io/license: Apache-2.0
+    meta.crossplane.io/description: |
+      This Configuration is a platform I built to demonstrate an infrastructure cloud platform consisting of several core infra primitives and which is also multi-cloud ready.
+    meta.crossplane.io/readme: |
+      This Configuration bundles APIs for several infrastructure cloud primitives.
+      The APIs allow users to provision fully
+      configured Kubernetes Clusters across all three major public clouds, composed
+      using cloud service primitives from 
+      the [Upbound Official Providers](https://marketplace.upbound.io/providers?publisher=upbound&tier=official).
+spec:
+  crossplane:
+    version: ">=v1.7.0-0"
+  dependsOn:
+    - provider: xpkg.upbound.io/upbound/provider-aws
+      version: ">=v0.30.0"
+    - provider: xpkg.upbound.io/upbound/provider-gcp
+      version: ">=v0.28.0"
+    - provider: xpkg.upbound.io/upbound/provider-azure
+      version: ">=v0.28.0"
+    - provider: xpkg.upbound.io/crossplane-contrib/provider-helm
+      version: ">=v0.14.0"
