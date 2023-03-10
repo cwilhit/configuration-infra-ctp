@@ -1,0 +1,39 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: CompositeResourceDefinition
+metadata:
+  name: xbuckets.infrastructure.example.org
+spec:
+  group: infrastructure.example.org
+  names:
+    kind: XBucket
+    plural: xbuckets
+  claimNames:
+    kind: Bucket
+    plural: buckets
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                id:
+                  type: string
+                  description: "ID of this Bucket that objects will use to refer to it."
+                  minLength: 1
+                  # Maximum key length in GCP is 40 characters. We are setting a 34 character
+                  # limit to accomodate the generated hash suffix ('-' + 5 chars).
+                  maxLength: 34
+              required:
+                - id
+            status:
+              type: object
+              properties:
+                subnetIds:
+                  type: array
+                  items:
+                    type: string
