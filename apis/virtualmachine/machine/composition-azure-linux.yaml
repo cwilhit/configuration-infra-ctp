@@ -1,0 +1,60 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: xmachines.infrastructure.example.org
+  labels:
+    provider: azure
+    operatingsystem: linux
+spec:
+  compositeTypeRef:
+    apiVersion: infrastructure.example.org/v1alpha1
+    kind: XMachine
+  resources:
+    - base:
+        apiVersion: compute.azure.upbound.io/v1beta1
+        kind: LinuxVirtualMachine
+        spec:
+          forProvider:
+            disablePasswordAuthentication: false
+            adminPasswordSecretRef:
+              key: vm-key
+              name: vm-secret
+              namespace: upbound-system
+            adminUsername: localadmin
+            sourceImageReference:
+              - offer: UbuntuServer
+                publisher: Canonical
+                sku: 16.04-LTS
+                version: latest
+            size: Standard_D2_v2 # patched
+            location: West US # patched
+            osDisk:
+              - caching: ReadWrite
+                storageAccountType: Standard_LRS
+            resourceGroupNameSelector:
+              matchLabels:
+                virtualmachines.infrastructure.example.org/rg-id: to-be-patched # patched
+            networkInterfaceIdsSelector:
+              matchLabels:
+                networks.infrastructure.example.org/nwinterface-id: to-be-patched # patched
+      patches:
+        - fromFieldPath: spec.id
+          toFieldPath: metadata.name
+          transforms:
+            - type: string
+              string:
+                fmt: "%s-azurevm"
+        - fromFieldPath: spec.id
+          toFieldPath: spec.forProvider.resourceGroupNameSelector.matchLabels[virtualmachines.infrastructure.example.org/rg-id]
+        - fromFieldPath: spec.id
+          toFieldPath: spec.forProvider.networkInterfaceIdsSelector.matchLabels[networks.infrastructure.example.org/nwinterface-id]
+        - fromFieldPath: spec.parameters.location
+          toFieldPath: spec.forProvider.location
+        - fromFieldPath: spec.parameters.vmSize
+          toFieldPath: spec.forProvider.size
+          transforms:
+            - type: map
+              map:
+                '1 vCPU, 1 GB': Standard_B1s
+                '2 vCPU, 8 GB': Standard_D2_v3
+                '4 vCPU, 16 GB': Standard_D4_v3

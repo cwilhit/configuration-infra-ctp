@@ -1,0 +1,74 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: xvirtualmachines.infrastructure.example.org
+  labels:
+    provider: azure
+spec:
+  compositeTypeRef:
+    apiVersion: infrastructure.example.org/v1alpha1
+    kind: XVirtualMachine
+  resources:
+    - base: 
+        apiVersion: azure.upbound.io/v1beta1
+        kind: ResourceGroup
+        spec:
+          forProvider:
+            location: westus
+      patches:
+        - fromFieldPath: spec.parameters.location
+          toFieldPath: spec.forProvider.location
+          transforms:
+            - type: map
+              map:
+                'East US': 'eastus'
+                'West US': 'westus'
+        - fromFieldPath: spec.id
+          toFieldPath: metadata.name
+          transforms:
+            - type: string
+              string:
+                fmt: "%s-rg"
+        - fromFieldPath: spec.id
+          toFieldPath: metadata.annotations[example.org/external-name]
+          transforms:
+            - type: string
+              string:
+                fmt: "%s-rg"
+        - fromFieldPath: spec.id
+          toFieldPath: metadata.labels[virtualmachines.infrastructure.example.org/rg-id]
+      name: ResourceGroupAzureVM
+    - base:
+        apiVersion: infrastructure.example.org/v1alpha1
+        kind: XNetwork
+      patches:
+        - fromFieldPath: spec.id
+          toFieldPath: spec.id
+        - fromFieldPath: spec.parameters.location
+          toFieldPath: spec.location
+      name: compositeNetAzureVM
+    - base:
+        apiVersion: infrastructure.example.org/v1alpha1
+        kind: XMachine
+      patches:
+        - fromFieldPath: spec.id
+          toFieldPath: spec.id
+        - fromFieldPath: spec.id
+          toFieldPath: metadata.annotations[example.org/external-name]
+        - fromFieldPath: spec.parameters.location
+          toFieldPath: spec.parameters.location
+        - fromFieldPath: spec.parameters.operatingSystem
+          toFieldPath: spec.parameters.operatingSystem
+        - fromFieldPath: spec.parameters.vmSize
+          toFieldPath: spec.parameters.vmSize
+        - fromFieldPath: spec.id
+          toFieldPath: spec.parameters.resourceGroupNameSelector.matchLabels[virtualmachines.infrastructure.example.org/rg-id]
+        - fromFieldPath: spec.parameters.operatingSystem
+          toFieldPath: metadata.labels[operatingsystem]
+          transforms:
+            - type: map
+              map:
+                'Windows': windows
+                'Linux (Ubuntu)': linux
+      name: compositeMachineAzure
+      

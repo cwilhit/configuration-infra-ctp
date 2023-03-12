@@ -1,0 +1,92 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: xnetworks.infrastructure.example.org
+  labels:
+    provider: azure
+spec:
+  writeConnectionSecretsToNamespace: upbound-system
+  compositeTypeRef:
+    apiVersion: infrastructure.example.org/v1alpha1
+    kind: XNetwork
+  patchSets:
+  - name: network-id
+    patches:
+    - type: FromCompositeFieldPath
+      fromFieldPath: spec.id
+      toFieldPath: metadata.labels[networks.infrastructure.example.org/network-id]
+  resources:
+    - base:
+        apiVersion: network.azure.upbound.io/v1beta1
+        kind: VirtualNetwork
+        spec:
+          forProvider:
+            resourceGroupNameSelector:
+              matchLabels:
+                virtualmachines.infrastructure.example.org/rg-id: to-be-patched # patched
+            location: West US # patched 
+            addressSpace:
+            - 192.168.0.0/16
+      patches:
+        - fromFieldPath: spec.location
+          toFieldPath: spec.forProvider.location
+        - fromFieldPath: spec.id
+          toFieldPath: metadata.name
+          transforms:
+            - type: string
+              string:
+                fmt: "%s-vnet"
+        - fromFieldPath: spec.id
+          toFieldPath: metadata.labels[networks.infrastructure.example.org/vnet-id]
+        - fromFieldPath: spec.id
+          toFieldPath: spec.forProvider.resourceGroupNameSelector.matchLabels[virtualmachines.infrastructure.example.org/rg-id]
+    - base:
+        apiVersion: network.azure.upbound.io/v1beta1
+        kind: Subnet
+        spec:
+          forProvider:
+            resourceGroupNameSelector:
+              matchLabels:
+                virtualmachines.infrastructure.example.org/rg-id: to-be-patched # patched
+            virtualNetworkNameSelector:
+              matchControllerRef: true
+            addressPrefixes:
+              - 192.168.1.0/24
+      patches:
+        - fromFieldPath: spec.id
+          toFieldPath: metadata.labels[networks.infrastructure.example.org/subnet-id]
+        - fromFieldPath: spec.id
+          toFieldPath: metadata.name
+          transforms:
+            - type: string
+              string:
+                fmt: "%s-sn"
+        - fromFieldPath: spec.id
+          toFieldPath: spec.forProvider.resourceGroupNameSelector.matchLabels[virtualmachines.infrastructure.example.org/rg-id]
+    - base:
+        apiVersion: network.azure.upbound.io/v1beta1
+        kind: NetworkInterface
+        spec:
+          forProvider:
+            ipConfiguration:
+              - name: testconfiguration1
+                privateIpAddressAllocation: Dynamic
+                subnetIdSelector:
+                  matchControllerRef: true
+            location: West US # patched 
+            resourceGroupNameSelector:
+              matchLabels:
+                virtualmachines.infrastructure.example.org/rg-id: to-be-patched # patched
+      patches:
+        - fromFieldPath: spec.location
+          toFieldPath: spec.forProvider.location
+        - fromFieldPath: spec.id
+          toFieldPath: metadata.name
+          transforms:
+            - type: string
+              string:
+                fmt: "%s-nwinterface"
+        - fromFieldPath: spec.id
+          toFieldPath: metadata.labels[networks.infrastructure.example.org/nwinterface-id]
+        - fromFieldPath: spec.id
+          toFieldPath: spec.forProvider.resourceGroupNameSelector.matchLabels[virtualmachines.infrastructure.example.org/rg-id]
