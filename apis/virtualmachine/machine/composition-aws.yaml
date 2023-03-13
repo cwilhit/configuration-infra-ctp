@@ -1,0 +1,50 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: xmachines.infrastructure.example.org
+  labels:
+    provider: aws
+spec:
+  compositeTypeRef:
+    apiVersion: infrastructure.example.org/v1alpha1
+    kind: XMachine
+  resources:
+    - base:
+        apiVersion: ec2.aws.upbound.io/v1beta1
+        kind: Instance
+        spec:
+          forProvider:
+            ami: ami-0d50e5e845c552faf # patched
+            instanceType: t2.micro # patched
+            region: us-west-1 # patched
+            networkInterface:
+              - deviceIndex: 0
+                networkInterfaceIdSelector:
+                  matchLabels:
+                    networks.infrastructure.example.org/nwinterface-id: to-be-patched # patched
+      patches:
+        - fromFieldPath: spec.parameters.location
+          toFieldPath: spec.forProvider.region
+          transforms:
+            - type: map
+              map:
+                'East US': 'us-east-1'
+                'West US': 'us-west-1'
+        - fromFieldPath: spec.parameters.operatingSystem
+          toFieldPath: spec.forProvider.ami
+          transforms:
+            - type: map
+              map:
+                'Windows': ami-00eda368daf738c59 # Windows Server 2022
+                'Linux (Ubuntu)': ami-0d50e5e845c552faf # Ubuntu 22.04 LTS
+        - fromFieldPath: spec.parameters.vmSize
+          toFieldPath: spec.forProvider.instanceType
+          transforms:
+            - type: map
+              map:
+                '1 vCPU, 1 GB': t2.micro
+                '2 vCPU, 8 GB': m4.large
+                '4 vCPU, 16 GB': m4.xlarge
+        # Create this machine in the Network referenced by network ID
+        - fromFieldPath: spec.parameters.XNetworkSelector.matchLabels
+          toFieldPath: spec.forProvider.networkInterface[0].networkInterfaceIdSelector.matchLabels
