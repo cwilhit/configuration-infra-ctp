@@ -35,6 +35,9 @@ spec:
                     location:
                       type: string
                       description: "Zone or region for the Virtual Machine (default: `us-west1-c`)"
+                      enum:
+                        - 'East US'
+                        - 'West US'
                     operatingSystem:
                       type: string
                       description: "The Operating System to  be used for the Virtual Machine image"
