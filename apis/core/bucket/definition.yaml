@@ -28,6 +28,13 @@ spec:
                   # Maximum key length in GCP is 40 characters. We are setting a 34 character
                   # limit to accomodate the generated hash suffix ('-' + 5 chars).
                   maxLength: 34
+                parameters:
+                  type: object
+                  description: "Bucket parameters."
+                  properties:
+                    resourcegroup:
+                      type: string
+                      description: "[Azure-only] ID of a resource group to associate the bucket with. Will create one with this name if not exists."
               required:
                 - id
             status:
