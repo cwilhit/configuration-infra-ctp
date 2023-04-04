@@ -1,0 +1,63 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: xbuckets.infrastructure.example.org
+  labels:
+    provider: azure
+spec:
+  compositeTypeRef:
+    apiVersion: infrastructure.example.org/v1alpha1
+    kind: XBucket
+  resources:
+    - base: 
+        apiVersion: azure.upbound.io/v1beta1
+        kind: ResourceGroup
+        spec:
+          forProvider:
+            location: westus
+      patches:
+        - fromFieldPath: spec.parameters.resourcegroup
+          toFieldPath: metadata.annotations[crossplane.io/external-name]
+    - base:
+        apiVersion: storage.azure.upbound.io/v1beta1
+        kind: Account
+        spec:
+          forProvider:
+            accountReplicationType: LRS
+            accountTier: Standard
+            location: westus
+            resourceGroupNameSelector:
+              matchControllerRef: true
+            tags:
+              provisioner: Upbound
+          writeConnectionSecretToRef:
+            name: blob-storage-account
+            namespace: upbound-system
+      patches:
+        - fromFieldPath: metadata.uid
+          toFieldPath: spec.writeConnectionSecretToRef.name
+          transforms:
+            - type: string
+              string:
+                fmt: "%s-StorageAccount"
+    - base:
+        apiVersion: storage.azure.upbound.io/v1beta1
+        kind: Container
+        spec:
+          forProvider:
+            containerAccessType: private
+            storageAccountNameSelector:
+              matchControllerRef: true
+    - base:
+        apiVersion: storage.azure.upbound.io/v1beta1
+        kind: Blob
+        spec:
+          forProvider:
+            storageAccountNameSelector:
+              matchControllerRef: true
+            storageContainerNameSelector:
+              matchControllerRef: true
+            type: Block
+      patches:
+        - fromFieldPath: spec.id
+          toFieldPath: metadata.annotations[crossplane.io/external-name]
