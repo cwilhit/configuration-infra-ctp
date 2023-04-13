@@ -1,0 +1,179 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: aws.xcompositeamplifys.infrastructure.example.org
+  labels:
+    provider: aws
+spec:
+  compositeTypeRef:
+    apiVersion: infrastructure.example.org/v1alpha1
+    kind: XCompositeAmplify
+  resources:
+    # An IAM role that allows the Amplify console hosting for static website
+    - name: amplify-iam-role-webhosting
+      base:
+        apiVersion: iam.aws.upbound.io/v1beta1
+        kind: Role
+        metadata:
+          labels:
+            infrastructure.example.org/amplify-role: amplify-role
+        spec:
+          forProvider:
+            assumeRolePolicy: |
+              {
+                "Version": "2012-10-17",
+                "Statement": [
+                  {
+                    "Effect": "Allow",
+                    "Principal": {
+                      "Service": ["amplify.amazonaws.com"]
+                    },
+                    "Action": "sts:AssumeRole"
+                  }
+                ]
+              }
+    # an IAM policy for Amplify
+    - name: amplify-iam-policy-webhosting
+      base:
+        apiVersion: iam.aws.upbound.io/v1beta1
+        kind: Policy
+        metadata:
+          labels:
+            infrastructure.example.org/amplify-policy: amplify-policy
+        spec:
+          forProvider:
+            policy: |
+              {
+                "Version": "2012-10-17",
+                "Statement": [
+                  {
+                    "Action": ["amplify:*"],
+                    "Effect": "Allow",
+                    "Resource": "*"
+                  }
+                ]
+              }
+    # An IAM rolepolicy attachment to stitch role + policy together
+    - name: amplify-iam-rpa-webhosting
+      base:
+        apiVersion: iam.aws.upbound.io/v1beta1
+        kind: RolePolicyAttachment
+        spec:
+          forProvider:
+            policyArnSelector:
+              matchControllerRef: true
+              matchLabels:
+                infrastructure.example.org/amplify-policy: amplify-policy
+            roleSelector:
+              matchControllerRef: true
+              matchLabels:
+                infrastructure.example.org/amplify-role: amplify-role
+    # Amplify Console application that will manage deployment of frontend updates based on pushes to GitHub
+    # You need to have an OAuth token created and stored as a secret in order for below to work
+    - name: amplify
+      base:
+        apiVersion: amplify.aws.upbound.io/v1beta1
+        kind: App
+        metadata:
+          labels:
+            infrastructure.example.org/amplify-app: amplify-app
+        spec:
+          forProvider:
+            name: stack-app
+            region: us-west-1
+            repository: repo.git
+            description: app provisioned from Upbound
+            buildSpec: |-
+              version: 0.1
+              frontend:
+                phases:
+                  build:
+                    commands:
+                      - cd www/src
+                      - npm install
+                      - npm run build
+                artifacts:
+                  baseDirectory: www/build/
+                  files:
+                    - '**/*'
+            oauthTokenSecretRef:
+              key: amplify-app-key
+              name: amplify-app-secret
+              namespace: upbound-system
+            iamServiceRoleArnSelector: 
+              matchControllerRef: true
+              matchLabels:
+                infrastructure.example.org/amplify-role: amplify-role
+      patches:
+        - fromFieldPath: spec.repository
+          toFieldPath: spec.forProvider.repository
+        - type: ToCompositeFieldPath
+          fromFieldPath: status.atProvider.defaultDomain
+          toFieldPath: status.domain
+          policy:
+            fromFieldPath: Required
+    # Connecting a GitHub branch to the Amplify Console application
+    - name: amplify-branch
+      base:
+        apiVersion: amplify.aws.upbound.io/v1beta1
+        kind: Branch
+        metadata:
+          name: main
+          annotations:
+            crossplane.io/external-name: main
+        spec:
+          forProvider:
+            appIdSelector:
+              matchControllerRef: true
+              matchLabels:
+                infrastructure.example.org/amplify-app: amplify-app
+            region: us-west-1
+            displayName: main
+            stage: PRODUCTION
+            description: Amplify Console branch
+            enableAutoBuild: true
+      patches:
+        - type: ToCompositeFieldPath
+          fromFieldPath: spec.forProvider.displayName
+          toFieldPath: status.branchName
+          policy:
+            fromFieldPath: Required
+    # An IAM role that allows the Amplify Console to perform build and deployment actions
+    - name: amplify-iam-role
+      base:
+        apiVersion: iam.aws.upbound.io/v1beta1
+        kind: Role
+        metadata:
+          labels:
+            infrastructure.example.org/amplify-build-role: amplify-build-role
+        spec:
+          forProvider:
+            description: "Push logs to CloudWatch logs from API Gateway"
+            assumeRolePolicy: |
+              {
+                "Version": "2012-10-17",
+                "Statement": [
+                  {
+                    "Effect": "Allow",
+                    "Principal": {
+                      "Service": ["apigateway.amazonaws.com"]
+                    },
+                    "Action": "sts:AssumeRole"
+                  }
+                ]
+              }
+    # An IAM policy that allows the Amplify Console to perform build and deployment actions
+    - name: amplify-iam-policy
+      base:
+        apiVersion: iam.aws.upbound.io/v1beta1
+        kind: RolePolicyAttachment
+        metadata:
+          labels:
+            infrastructure.example.org/amplify-build-policy: amplify-build-policy
+        spec:
+          forProvider:
+            policyArn: arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs
+            roleSelector:
+              matchControllerRef: true
+              matchLabels:
+                infrastructure.example.org/amplify-build-role: amplify-build-role

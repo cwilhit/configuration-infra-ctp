@@ -1,0 +1,338 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: aws.xcompositefunctions.infrastructure.example.org
+  labels:
+    provider: aws
+spec:
+  compositeTypeRef:
+    apiVersion: infrastructure.example.org/v1alpha1
+    kind: XCompositeFunction
+  resources:
+    # An IAM role for Lambda  function
+    - name: lambda-iam-role
+      base:
+        apiVersion: iam.aws.upbound.io/v1beta1
+        kind: Role
+        metadata:
+          labels:
+            infrastructure.example.org/iam-role: function-role
+        spec:
+          forProvider:
+            description: "Role for a Lambda function"
+            assumeRolePolicy: |
+              {
+                "Version": "2012-10-17",
+                "Statement": [
+                  {
+                    "Effect": "Allow",
+                    "Principal": {
+                      "Service": ["lambda.amazonaws.com"]
+                    },
+                    "Action": "sts:AssumeRole"
+                  }
+                ]
+              }
+     # The Lambda function used to retrieve a single ToDo item
+    - name: lambda-composite
+      base:
+        apiVersion: lambda.aws.upbound.io/v1beta1
+        kind: Function
+        metadata:
+          labels:
+            infrastructure.example.org/event-mapping-label: lambda-composite
+        spec:
+          forProvider:
+            handler: app.entrypoint
+            region: us-west-1
+            environment:
+              - variables: 
+                  TABLE_NAME: "table-ref"
+                  AWS_NODEJS_CONNECTION_REUSE_ENABLED: "1"
+                  USE_DYNAMODB_LOCAL: "0"
+                  DYNAMODB_LOCAL_URI: ""
+            runtime: nodejs12.x
+            s3BucketSelector:
+              matchLabels:
+                infrastructure.example.org/bucket-src: bucket-src
+            s3Key: function.zip
+            roleSelector:
+              matchLabels:
+                infrastructure.example.org/iam-role: function-role
+      patches:
+        - fromFieldPath: spec.location
+          toFieldPath: spec.forProvider.location
+          transforms:
+            - type: map
+              map:
+                'East US': 'us-east-1'
+                'West US': 'us-west-1'
+        - fromFieldPath: spec.key
+          toFieldPath: spec.forProvider.s3Key
+        - fromFieldPath: spec.handler
+          toFieldPath: spec.forProvider.handler
+        # - fromFieldPath: spec.tableName
+        #   toFieldPath: spec.forProvider.environment[0].variables.TABLE_NAME
+        - type: ToCompositeFieldPath
+          fromFieldPath: status.atProvider.invokeArn
+          toFieldPath: status.invokeArn
+          policy:
+            fromFieldPath: Required
+    # The permission for this function to get invoked by API Gateway
+    - name: invocation-permission
+      base:
+        apiVersion: lambda.aws.upbound.io/v1beta1
+        kind: Permission
+        spec:
+          forProvider:
+            action: lambda:InvokeFunction
+            functionNameSelector:
+              matchControllerRef: true
+              matchLabels:
+                infrastructure.example.org/event-mapping-label: lambda-composite
+            principal: apigateway.amazonaws.com
+            region: us-west-1
+            statementId: AllowExecutionFromAPIGateway
+    # This publishes the Rest API for the get method
+    - name: lambda-get-deployment
+      base:
+        apiVersion: apigateway.aws.upbound.io/v1beta1
+        kind: Deployment
+        metadata:
+          labels:
+            infrastructure.example.org/api-mapping-label: deployment
+        spec:
+          forProvider:
+            region: us-west-1
+            restApiIdSelector:
+              matchControllerRef: true
+              matchLabels:
+                infrastructure.example.org/api-mapping-label: rest-api-root
+    # This is the stage for the get rest API
+    - name: lambda-get-stage
+      base:
+        apiVersion: apigateway.aws.upbound.io/v1beta1
+        kind: Stage
+        spec:
+          forProvider:
+            deploymentIdSelector:
+              matchControllerRef: true
+              matchLabels:
+                infrastructure.example.org/api-mapping-label: deployment
+            region: us-west-1
+            restApiIdSelector:
+              matchControllerRef: true
+              matchLabels:
+                infrastructure.example.org/api-mapping-label: rest-api-root
+            stageName: production
+    # This is the IAM role for authorizer to assume
+    - name: lambda-authorizer-role
+      base:
+        apiVersion: iam.aws.upbound.io/v1beta1
+        kind: Role
+        metadata:
+          labels:
+            infrastructure.example.org/iam-role: authorizer-role
+        spec:
+          forProvider:
+            description: "Role for an API gateway authorizer to Lambda function"
+            assumeRolePolicy: |
+              {
+                "Version": "2012-10-17",
+                "Statement": [
+                  {
+                    "Effect": "Allow",
+                    "Principal": {
+                      "Service": ["apigateway.amazonaws.com"]
+                    },
+                    "Action": "sts:AssumeRole"
+                  }
+                ]
+              }
+    # an IAM policy for Amplify
+    - name: lambda-authorizer-role-policy
+      base:
+        apiVersion: iam.aws.upbound.io/v1beta1
+        kind: Policy
+        metadata:
+          labels:
+            infrastructure.example.org/iam-role: authorizer-role-policy
+        spec:
+          forProvider:
+            policy: |
+              {
+                "Version": "2012-10-17",
+                "Statement": [
+                  {
+                    "Action": ["lambda:InvokeFunction"],
+                    "Effect": "Allow",
+                    "Resource": "*"
+                  }
+                ]
+              }
+    # An IAM rolepolicy attachment to stitch role + policy together
+    - name: lambda-authorizer-rpa
+      base:
+        apiVersion: iam.aws.upbound.io/v1beta1
+        kind: RolePolicyAttachment
+        spec:
+          forProvider:
+            policyArnSelector:
+              matchControllerRef: true
+              matchLabels:
+                infrastructure.example.org/iam-role: authorizer-role-policy
+            roleSelector:
+              matchControllerRef: true
+              matchLabels:
+                infrastructure.example.org/iam-role: authorizer-role
+    # This is the authorizer for the gateway
+    - name: lambda-get-authorizer
+      base:
+        apiVersion: apigateway.aws.upbound.io/v1beta1
+        kind: Authorizer
+        metadata:
+          labels:
+            infrastructure.example.org/api-mapping-label: authorizer
+        spec:
+          forProvider:
+            authorizerCredentialsSelector:
+              matchControllerRef: true
+              matchLabels:
+                infrastructure.example.org/iam-role: authorizer-role
+            authorizerUriSelector:
+              matchControllerRef: true
+              matchLabels:
+                infrastructure.example.org/event-mapping-label: lambda-composite
+            name: lambda-get-authorizer
+            type: COGNITO_USER_POOLS 
+            providerArns: 
+              - user-pool-arns
+            region: us-west-1
+            restApiIdSelector:
+              matchControllerRef: true
+              matchLabels:
+                infrastructure.example.org/api-mapping-label: rest-api
+      patches:
+        - fromFieldPath: spec.userPoolArn
+          toFieldPath: spec.forProvider.providerArns[0]
+    # The CloudWatch Logs Log Group used by API Gateway for its log messages
+    - name: cloudwatch-logs
+      base:
+        apiVersion: cloudwatchlogs.aws.upbound.io/v1beta1
+        kind: Group
+        metadata:
+          name: aws-apigateway-AccessLog-stack-api
+        spec:
+          forProvider:
+            region: us-west-1
+            retentionInDays: 365
+    # --- API definition below this line ----
+    # The Rest API of the GET method to hook up to this function (/)
+    - name: lambda-restapi-root
+      base:
+        apiVersion: apigateway.aws.upbound.io/v1beta1
+        kind: RestAPI
+        metadata:
+          labels:
+            infrastructure.example.org/api-mapping-label: rest-api-root
+        spec:
+          forProvider:
+            description: This is my API for the get function
+            name: stack-get-api
+            region: us-west-1
+    # This is the API resource definition of the GET method (/item)
+    - name: lambda-apigw-item
+      base:
+        apiVersion: apigateway.aws.upbound.io/v1beta1
+        kind: Resource
+        metadata:
+          labels:
+            infrastructure.example.org/api-mapping-label: resource-item 
+        spec:
+          forProvider:
+            parentIdSelector:
+              matchControllerRef: true
+              matchLabels:
+                infrastructure.example.org/api-mapping-label: rest-api-root
+            restApiIdSelector:
+              matchControllerRef: true
+              matchLabels:
+                infrastructure.example.org/api-mapping-label: rest-api-root
+            pathPart: item
+            region: us-west-1
+    # This is the API resource definition of the GET method
+    - name: lambda-apigw-item-id
+      base:
+        apiVersion: apigateway.aws.upbound.io/v1beta1
+        kind: Resource
+        metadata:
+          labels:
+            infrastructure.example.org/api-mapping-label: resource-item-id 
+        spec:
+          forProvider:
+            parentIdSelector:
+              matchControllerRef: true
+              matchLabels:
+                infrastructure.example.org/api-mapping-label: resource-item 
+            restApiIdSelector:
+              matchControllerRef: true
+              matchLabels:
+                infrastructure.example.org/api-mapping-label: rest-api-root
+            pathPart: "{id}"
+            region: us-west-1
+    # This is the API method definition of the GET method
+    - name: lambda-get-method
+      base:
+        apiVersion: apigateway.aws.upbound.io/v1beta1
+        kind: Method
+        metadata:
+          labels:
+            infrastructure.example.org/api-mapping-label: method
+        spec:
+          forProvider:
+            authorization: COGNITO_USER_POOLS
+            httpMethod: POST
+            region: us-west-1
+            authorizerIdSelector:
+              matchControllerRef: true
+              matchLabels:
+                infrastructure.example.org/api-mapping-label: authorizer
+            authorizationScopes: 
+              - asd
+            restApiIdSelector:
+              matchControllerRef: true
+              matchLabels:
+                infrastructure.example.org/api-mapping-label: rest-api-root
+            resourceIdSelector:
+              matchControllerRef: true
+              matchLabels:
+                infrastructure.example.org/api-mapping-label: resource-item-id 
+    # This makes the API available for consumption by Functions
+    - name: lambda-integration
+      base:
+        apiVersion: apigateway.aws.upbound.io/v1beta1
+        kind: Integration
+        metadata:
+          labels:
+            infrastructure.example.org/api-mapping-label: integration
+        spec:
+          forProvider:
+            httpMethodSelector:
+              matchControllerRef: true
+              matchLabels:
+                infrastructure.example.org/api-mapping-label: method
+            region: us-west-1
+            resourceIdSelector:
+              matchControllerRef: true
+              matchLabels:
+                infrastructure.example.org/api-mapping-label: resource-item-id 
+            restApiIdSelector:
+              matchControllerRef: true
+              matchLabels:
+                infrastructure.example.org/api-mapping-label: rest-api-root
+            type: AWS_PROXY
+            uri: lambda-invoke-arn
+            integrationHttpMethod: POST
+      patches:
+        - fromFieldPath: status.invokeArn
+          toFieldPath: spec.forProvider.uri

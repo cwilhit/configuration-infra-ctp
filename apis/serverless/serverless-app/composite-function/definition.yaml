@@ -1,0 +1,50 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: CompositeResourceDefinition
+metadata:
+  name: xcompositefunctions.infrastructure.example.org
+spec:
+  group: infrastructure.example.org
+  names:
+    kind: XCompositeFunction
+    plural: xcompositefunctions
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                location:
+                      type: string
+                      description: "Zone or region for the Function (default: `us-west1-c`)"
+                      enum:
+                        - 'East US'
+                        - 'West US'
+                tableName:
+                  type: string
+                  description: "The name of the DynamoDB table source being used with this Function"
+                userPoolArn:
+                  type: string
+                  description: "The ARN for the Cognito user pool associated with this function"
+                key:
+                  type: string
+                  description: "The name of the zipfile containing the function code"
+                handler:
+                  type: string
+                  description: "The entrypoint of the Function execution"
+              required:
+                - location
+                - tableName
+                - userPoolArn
+                - key
+                - handler
+            status:
+              type: object
+              properties:
+                invokeArn:
+                  type: string
+                  description: "the ARN of the Function for invocation"

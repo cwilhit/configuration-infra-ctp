@@ -1,0 +1,90 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: aws.xcompositecognitos.infrastructure.example.org
+  labels:
+    provider: aws
+spec:
+  compositeTypeRef:
+    apiVersion: infrastructure.example.org/v1alpha1
+    kind: XCompositeCognito
+  resources:
+    # A Cognito UserPool that holds all the application users
+    - name: cognito-userpool
+      base:
+        apiVersion: cognitoidp.aws.upbound.io/v1beta1
+        kind: UserPool
+        spec:
+          forProvider:
+            adminCreateUserConfig:
+              - allowAdminCreateUserOnly: false
+            usernameAttributes: 
+              - email
+            autoVerifiedAttributes:
+              - email
+            name: app-identity-pool
+            region: us-west-1
+            passwordPolicy:
+              - minimumLength: 6
+                RequireLowercase: true
+                RequireNumbers: false
+                RequireSymbols: false
+                RequireUppercase: true
+      patches:
+        - type: ToCompositeFieldPath
+          fromFieldPath: status.atProvider.arn
+          toFieldPath: status.userPoolArn
+          policy:
+            fromFieldPath: Required
+    # A Cognito UserPool Client used by the web application
+    - name: cognito-userpool-client
+      base:
+        apiVersion: cognitoidp.aws.upbound.io/v1beta1
+        kind: UserPoolClient
+        spec:
+          forProvider:
+            name: stack-up-client
+            region: us-west-1
+            supportedIdentityProviders:
+              - COGNITO
+            userPoolIdSelector:
+              matchControllerRef: true
+            generateSecret: false
+            allowedOauthFlowsUserPoolClient: true
+            allowedOauthFlows:
+              - code
+              - implicit
+            callbackUrls: 
+              - 'patchedurl'
+              - 'http://localhost:3000'
+              - 'http://localhost:8080' 
+              - 'https://localhost'
+            allowedOauthScopes:
+              - phone
+              - email
+              - openid
+            ExplicitAuthFlows:
+              - USER_PASSWORD_AUTH
+      patches:
+        - type: CombineFromComposite
+          combine:
+            variables:
+            - fromFieldPath: spec.branchName
+            - fromFieldPath: spec.domain
+            strategy: string
+            string:
+              fmt: "https://%s.%s"
+          toFieldPath: spec.forProvider.callbackUrls[0]
+          policy:
+            fromFieldPath: Required
+    # The Cognito UserPool domain name
+    - name: cognito-userpool-domain
+      base:
+        apiVersion: cognitoidp.aws.upbound.io/v1beta1
+        kind: UserPoolDomain
+        spec:
+          forProvider:
+            domain: stack-up-domain
+            region: us-west-1
+            userPoolIdSelector:
+              matchControllerRef: true
