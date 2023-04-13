@@ -1,0 +1,23 @@
+apiVersion: infrastructure.example.org/v1alpha1
+kind: ServerlessApp
+metadata:
+  name: craig-stack-13
+  namespace: default
+spec:
+  id: craig-stack-13
+  parameters:
+    image: 'null'
+    location: West US
+    repository: https://github.com/cwilhit/lambda-refarch-webapp/
+    lambdaBucket: craig-stack-lambda-bucket
+  compositionSelector:
+    matchLabels:
+      provider: aws
+
+
+# const config = {
+#   "aws_user_pools_web_client_id": "5ta17jlg0kvmd4bvepp2q5v6km",     // CognitoClientID
+#   "api_base_url": "https://00okbsr637.execute-api.us-west-1.amazonaws.com/production",                                     // TodoFunctionApi
+#   "cognito_hosted_domain": "https://stack-up-domain.auth.us-west-1.amazoncognito.com",                   // CognitoDomainName
+#   "redirect_url": "https://main.d10yikfjh2wb5r.amplifyapp.com"                                      // AmplifyURL
+# };

@@ -1,0 +1,35 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: CompositeResourceDefinition
+metadata:
+  name: xcompositecognitos.infrastructure.example.org
+spec:
+  group: infrastructure.example.org
+  names:
+    kind: XCompositeCognito
+    plural: xcompositecognitos
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                branchName:
+                  type: string
+                  description: "Name of the branch in GH serving the frontend source code"
+                domain:
+                  type: string
+                  description: "The domain created for the frontend amplify app"
+              required:
+                - branchName
+                - domain
+            status:
+              type: object
+              properties:
+                userPoolArn:
+                  type: string
+                  description: "the ARN of the created user pool"
