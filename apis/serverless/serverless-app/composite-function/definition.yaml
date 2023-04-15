@@ -18,33 +18,62 @@ spec:
             spec:
               type: object
               properties:
-                location:
+                parameters:
+                  type: object
+                  properties:
+                    location:
+                          type: string
+                          description: "Zone or region for the Function (default: `us-west1-c`)"
+                          enum:
+                            - 'East US'
+                            - 'West US'
+                    tableName:
                       type: string
-                      description: "Zone or region for the Function (default: `us-west1-c`)"
-                      enum:
-                        - 'East US'
-                        - 'West US'
-                tableName:
-                  type: string
-                  description: "The name of the DynamoDB table source being used with this Function"
+                      description: "The name of the DynamoDB table source being used with this Function"
+                    key:
+                      type: string
+                      description: "The name of the zipfile containing the function code"
+                    handler:
+                      type: string
+                      description: "The entrypoint of the Function execution"
+                  required:
+                    - location
+                    - tableName
+                    - key
+                    - handler
+                apiConfig:
+                  type: object
+                  properties: 
+                    httpMethod:
+                      type: string
+                      description: "The API method to attach with this Function"
+                    apiRootId:
+                      type: string
+                      description: "The ID of the root of the API gateway"
+                    apiParentId:
+                      type: string
+                      description: "The parent ID of the API resource part to attach to (this may be the same as apiRootId)"
+                    authorizerId:
+                      type: string
+                      description: "The ID of the cognito user pool authorizer"
+                  required:
+                    - httpMethod
+                    - apiRootId
+                    - apiParentId
+                    - authorizerId
                 userPoolArn:
                   type: string
                   description: "The ARN for the Cognito user pool associated with this function"
-                key:
-                  type: string
-                  description: "The name of the zipfile containing the function code"
-                handler:
-                  type: string
-                  description: "The entrypoint of the Function execution"
               required:
-                - location
-                - tableName
+                - parameters
+                - apiConfig
                 - userPoolArn
-                - key
-                - handler
             status:
               type: object
               properties:
                 invokeArn:
                   type: string
                   description: "the ARN of the Function for invocation"
+                apiResourceId:
+                  type: string
+                  description: "the ID of API resource"

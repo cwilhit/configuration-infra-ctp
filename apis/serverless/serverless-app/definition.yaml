@@ -73,3 +73,21 @@ spec:
                 invokeArn:
                   description: The lambda invocation arn
                   type: string
+                apiResourceIds:
+                  type: object
+                  properties:
+                    apiRootId:
+                      description: "The ID of the root of the API"
+                      type: string
+                    resourceItemId:
+                      description: "The ID of the /item API"
+                      type: string
+                    resourceItemAtId:
+                      description: "The ID of the /item/{id} API"
+                      type: string
+                    resourceItemAtDoneId:
+                      description: "The ID of the /item/{id}/done API"
+                      type: string
+                    authorizerId:
+                      description: "The ID of the cognito user pool authorizer"
+                      type: string
