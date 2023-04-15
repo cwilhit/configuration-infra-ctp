@@ -14,6 +14,7 @@ spec:
       base: 
         apiVersion: infrastructure.example.org/v1alpha1
         kind: XCompositeCognito
+        spec: {}
       patches:
         - type: FromCompositeFieldPath
           fromFieldPath: status.branchName
@@ -26,29 +27,224 @@ spec:
           toFieldPath: status.userPoolArn
           policy:
             fromFieldPath: Required
-    # The Lambda + API Gateway XR
-    - name: lambda
+    # The API Gateway XR
+    - name: apigw
+      base: 
+        apiVersion: infrastructure.example.org/v1alpha1
+        kind: XCompositeGateway
+        spec: {}
+      patches:
+        - type: ToCompositeFieldPath
+          fromFieldPath: status.apiRootId
+          toFieldPath: status.apiResourceIds.apiRootId
+          policy:
+            fromFieldPath: Required
+        - type: ToCompositeFieldPath
+          fromFieldPath: status.resourceItemId
+          toFieldPath: status.apiResourceIds.resourceItemId
+          policy:
+            fromFieldPath: Required
+        - type: ToCompositeFieldPath
+          fromFieldPath: status.resourceItemAtId
+          toFieldPath: status.apiResourceIds.resourceItemAtId
+          policy:
+            fromFieldPath: Required
+        - type: ToCompositeFieldPath
+          fromFieldPath: status.resourceItemAtDoneId
+          toFieldPath: status.apiResourceIds.resourceItemAtDoneId
+          policy:
+            fromFieldPath: Required
+        - type: ToCompositeFieldPath
+          fromFieldPath: status.authorizerId
+          toFieldPath: status.apiResourceIds.authorizerId
+          policy:
+            fromFieldPath: Required
+    # The Lambda /item Get Function
+    - name: lambda-item-get
       base: 
         apiVersion: infrastructure.example.org/v1alpha1
         kind: XCompositeFunction
         spec:
-          key: GetTodoFunction.zip
-          handler: app.getToDoItem
+          parameters:
+            key: GetAllTodoFunction.zip
+            handler: app.getAllToDoItem
+          apiConfig:
+            httpMethod: GET
       patches:
         - type: FromCompositeFieldPath
           fromFieldPath: spec.parameters.location
-          toFieldPath: spec.location
+          toFieldPath: spec.parameters.location
         - type: FromCompositeFieldPath
           fromFieldPath: status.eventSourceArn
-          toFieldPath: spec.tableName
+          toFieldPath: spec.parameters.tableName
         - type: FromCompositeFieldPath
           fromFieldPath: status.userPoolArn
           toFieldPath: spec.userPoolArn
-    # The Lambda + API Gateway XR
+        - type: FromCompositeFieldPath
+          fromFieldPath: status.apiResourceIds.apiRootId
+          toFieldPath: spec.apiConfig.apiRootId
+        - type: FromCompositeFieldPath
+          fromFieldPath: status.apiResourceIds.apiRootId
+          toFieldPath: spec.apiConfig.apiParentId
+        - type: FromCompositeFieldPath
+          fromFieldPath: status.apiResourceIds.authorizerId
+          toFieldPath: spec.apiConfig.authorizerId
+    # The Lambda /item Post Function
+    - name: lambda-item-post
+      base: 
+        apiVersion: infrastructure.example.org/v1alpha1
+        kind: XCompositeFunction
+        spec:
+          parameters:
+            key: AddTodoFunction.zip
+            handler: app.addToDoItem
+          apiConfig:
+            httpMethod: POST
+      patches:
+        - type: FromCompositeFieldPath
+          fromFieldPath: spec.parameters.location
+          toFieldPath: spec.parameters.location
+        - type: FromCompositeFieldPath
+          fromFieldPath: status.eventSourceArn
+          toFieldPath: spec.parameters.tableName
+        - type: FromCompositeFieldPath
+          fromFieldPath: status.userPoolArn
+          toFieldPath: spec.userPoolArn
+        - type: FromCompositeFieldPath
+          fromFieldPath: status.apiResourceIds.apiRootId
+          toFieldPath: spec.apiConfig.apiRootId
+        - type: FromCompositeFieldPath
+          fromFieldPath: status.apiResourceIds.apiRootId
+          toFieldPath: spec.apiConfig.apiParentId
+        - type: FromCompositeFieldPath
+          fromFieldPath: status.apiResourceIds.authorizerId
+          toFieldPath: spec.apiConfig.authorizerId
+    # The Lambda /item/{id} Get Function
+    - name: lambda-item-id-get
+      base: 
+        apiVersion: infrastructure.example.org/v1alpha1
+        kind: XCompositeFunction
+        spec:
+          parameters:
+            key: GetTodoFunction.zip
+            handler: app.getToDoItem
+          apiConfig:
+            httpMethod: GET
+      patches:
+        - type: FromCompositeFieldPath
+          fromFieldPath: spec.parameters.location
+          toFieldPath: spec.parameters.location
+        - type: FromCompositeFieldPath
+          fromFieldPath: status.eventSourceArn
+          toFieldPath: spec.parameters.tableName
+        - type: FromCompositeFieldPath
+          fromFieldPath: status.userPoolArn
+          toFieldPath: spec.userPoolArn
+        - type: FromCompositeFieldPath
+          fromFieldPath: status.apiResourceIds.apiRootId
+          toFieldPath: spec.apiConfig.apiRootId
+        - type: FromCompositeFieldPath
+          fromFieldPath: status.apiResourceIds.resourceItemId
+          toFieldPath: spec.apiConfig.apiParentId
+        - type: FromCompositeFieldPath
+          fromFieldPath: status.apiResourceIds.authorizerId
+          toFieldPath: spec.apiConfig.authorizerId
+    # The Lambda /item/{id} Put Function
+    - name: lambda-item-id-put
+      base: 
+        apiVersion: infrastructure.example.org/v1alpha1
+        kind: XCompositeFunction
+        spec:
+          parameters:
+            key: UpdateTodoFunction.zip
+            handler: app.updateToDoItem
+          apiConfig:
+            httpMethod: PUT
+      patches:
+        - type: FromCompositeFieldPath
+          fromFieldPath: spec.parameters.location
+          toFieldPath: spec.parameters.location
+        - type: FromCompositeFieldPath
+          fromFieldPath: status.eventSourceArn
+          toFieldPath: spec.parameters.tableName
+        - type: FromCompositeFieldPath
+          fromFieldPath: status.userPoolArn
+          toFieldPath: spec.userPoolArn
+        - type: FromCompositeFieldPath
+          fromFieldPath: status.apiResourceIds.apiRootId
+          toFieldPath: spec.apiConfig.apiRootId
+        - type: FromCompositeFieldPath
+          fromFieldPath: status.apiResourceIds.resourceItemId
+          toFieldPath: spec.apiConfig.apiParentId
+        - type: FromCompositeFieldPath
+          fromFieldPath: status.apiResourceIds.authorizerId
+          toFieldPath: spec.apiConfig.authorizerId
+    # The Lambda /item/{id} Delete Function
+    - name: lambda-item-id-delete
+      base: 
+        apiVersion: infrastructure.example.org/v1alpha1
+        kind: XCompositeFunction
+        spec:
+          parameters:
+            key: DeleteTodoFunction.zip
+            handler: app.deleteToDoItem
+          apiConfig:
+            httpMethod: DELETE
+      patches:
+        - type: FromCompositeFieldPath
+          fromFieldPath: spec.parameters.location
+          toFieldPath: spec.parameters.location
+        - type: FromCompositeFieldPath
+          fromFieldPath: status.eventSourceArn
+          toFieldPath: spec.parameters.tableName
+        - type: FromCompositeFieldPath
+          fromFieldPath: status.userPoolArn
+          toFieldPath: spec.userPoolArn
+        - type: FromCompositeFieldPath
+          fromFieldPath: status.apiResourceIds.apiRootId
+          toFieldPath: spec.apiConfig.apiRootId
+        - type: FromCompositeFieldPath
+          fromFieldPath: status.apiResourceIds.resourceItemId
+          toFieldPath: spec.apiConfig.apiParentId
+        - type: FromCompositeFieldPath
+          fromFieldPath: status.apiResourceIds.authorizerId
+          toFieldPath: spec.apiConfig.authorizerId
+    # The Lambda /item/{id}/done Post Function
+    - name: lambda-item-id-done-post
+      base: 
+        apiVersion: infrastructure.example.org/v1alpha1
+        kind: XCompositeFunction
+        spec:
+          parameters:
+            key: CompleteTodoFunction.zip
+            handler: app.completeToDoItem
+          apiConfig:
+            httpMethod: POST
+      patches:
+        - type: FromCompositeFieldPath
+          fromFieldPath: spec.parameters.location
+          toFieldPath: spec.parameters.location
+        - type: FromCompositeFieldPath
+          fromFieldPath: status.eventSourceArn
+          toFieldPath: spec.parameters.tableName
+        - type: FromCompositeFieldPath
+          fromFieldPath: status.userPoolArn
+          toFieldPath: spec.userPoolArn
+        - type: FromCompositeFieldPath
+          fromFieldPath: status.apiResourceIds.apiRootId
+          toFieldPath: spec.apiConfig.apiRootId
+        - type: FromCompositeFieldPath
+          fromFieldPath: status.apiResourceIds.resourceItemAtId
+          toFieldPath: spec.apiConfig.apiParentId
+        - type: FromCompositeFieldPath
+          fromFieldPath: status.apiResourceIds.authorizerId
+          toFieldPath: spec.apiConfig.authorizerId
+    # The amplify XR
     - name: amplify
       base: 
         apiVersion: infrastructure.example.org/v1alpha1
         kind: XCompositeAmplify
+        spec: {}
       patches:
         - type: FromCompositeFieldPath
           fromFieldPath: spec.parameters.repository
@@ -69,6 +265,8 @@ spec:
         apiVersion: dynamodb.aws.upbound.io/v1beta1
         kind: Table
         metadata:
+          annotations:
+            crossplane.io/external-name: dbtable
           name: dbtable
         spec:
           forProvider:
@@ -122,137 +320,3 @@ spec:
       patches:
         - fromFieldPath: spec.parameters.lambdaBucket
           toFieldPath: metadata[crossplane.io/external-name]
-
-
-
-    # The Lambda function used to retrieve all the ToDo items
-    # - base:
-    #     apiVersion: lambda.aws.upbound.io/v1beta1
-    #     kind: Function
-    #     spec:
-    #       forProvider:
-    #         handler: index.py
-    #         region: us-east-1
-    #         roleRef:
-    #           name: sample-role
-    #         runtime: python3.9
-    #         s3Bucket: upbound-provider-test-data
-    #         s3Key: hello-python.zip
-    #   patches:
-    #     - fromFieldPath: spec.parameters.location
-    #       toFieldPath: spec.forProvider.location
-    #       transforms:
-    #         - type: map
-    #           map:
-    #             'East US': 'us-east-1'
-    #             'West US': 'us-west-1'
-    # # The Lambda function used to set the state of an item to complete
-    # - base:
-    #     apiVersion: lambda.aws.upbound.io/v1beta1
-    #     kind: Function
-    #     spec:
-    #       forProvider:
-    #         handler: index.py
-    #         region: us-east-1
-    #         roleRef:
-    #           name: sample-role
-    #         runtime: python3.9
-    #         s3Bucket: upbound-provider-test-data
-    #         s3Key: hello-python.zip
-    #   patches:
-    #     - fromFieldPath: spec.parameters.location
-    #       toFieldPath: spec.forProvider.location
-    #       transforms:
-    #         - type: map
-    #           map:
-    #             'East US': 'us-east-1'
-    #             'West US': 'us-west-1'
-    # # The Lambda function used to create a new ToDo item
-    # - base:
-    #     apiVersion: lambda.aws.upbound.io/v1beta1
-    #     kind: Function
-    #     spec:
-    #       forProvider:
-    #         handler: index.py
-    #         region: us-east-1
-    #         roleRef:
-    #           name: sample-role
-    #         runtime: python3.9
-    #         s3Bucket: upbound-provider-test-data
-    #         s3Key: hello-python.zip
-    #   patches:
-    #     - fromFieldPath: spec.parameters.location
-    #       toFieldPath: spec.forProvider.location
-    #       transforms:
-    #         - type: map
-    #           map:
-    #             'East US': 'us-east-1'
-    #             'West US': 'us-west-1'
-    # # The Lambda function used to update the content of a ToDo item
-    # - base:
-    #     apiVersion: lambda.aws.upbound.io/v1beta1
-    #     kind: Function
-    #     spec:
-    #       forProvider:
-    #         handler: index.py
-    #         region: us-east-1
-    #         roleRef:
-    #           name: sample-role
-    #         runtime: python3.9
-    #         s3Bucket: upbound-provider-test-data
-    #         s3Key: hello-python.zip
-    #   patches:
-    #     - fromFieldPath: spec.parameters.location
-    #       toFieldPath: spec.forProvider.location
-    #       transforms:
-    #         - type: map
-    #           map:
-    #             'East US': 'us-east-1'
-    #             'West US': 'us-west-1'
-    # # The Lambda function used to delete a ToDo item
-    # - base:
-    #     apiVersion: lambda.aws.upbound.io/v1beta1
-    #     kind: Function
-    #     spec:
-    #       forProvider:
-    #         handler: index.py
-    #         region: us-east-1
-    #         roleRef:
-    #           name: sample-role
-    #         runtime: python3.9
-    #         s3Bucket: upbound-provider-test-data
-    #         s3Key: hello-python.zip
-    #   patches:
-    #     - fromFieldPath: spec.parameters.location
-    #       toFieldPath: spec.forProvider.location
-    #       transforms:
-    #         - type: map
-    #           map:
-    #             'East US': 'us-east-1'
-    #             'West US': 'us-west-1'
-    # # An IAM role that allows API Gateway to send log events to CloudWatch Logs
-    # - base:
-    #     apiVersion: iam.aws.upbound.io/v1beta1
-    #     kind: Role
-    #     metadata:
-    #       annotations:
-    #         meta.upbound.io/example-id: sagemaker/v1beta1/device
-    #       labels:
-    #         testing.upbound.io/example-name: example
-    #       name: example
-    #     spec:
-    #       forProvider:
-    #         assumeRolePolicy: |
-    #           {
-    #             "Version": "2012-10-17",
-    #             "Statement": [
-    #               {
-    #                 "Effect": "Allow",
-    #                 "Principal": {
-    #                   "Service": ["iot.amazonaws.com", "sagemaker.amazonaws.com"]
-    #                 },
-    #                 "Action": "sts:AssumeRole"
-    #               }
-    #             ]
-    #           }
-    

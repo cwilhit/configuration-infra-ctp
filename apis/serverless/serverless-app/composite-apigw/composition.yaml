@@ -1,0 +1,236 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: aws.xcompositegateways.infrastructure.example.org
+  labels:
+    provider: aws
+spec:
+  compositeTypeRef:
+    apiVersion: infrastructure.example.org/v1alpha1
+    kind: XCompositeGateway
+  resources:
+    # This publishes the Rest API for the get method
+    - name: api-deployment
+      base:
+        apiVersion: apigateway.aws.upbound.io/v1beta1
+        kind: Deployment
+        metadata:
+          labels:
+            infrastructure.example.org/api-mapping-label: deployment
+        spec:
+          forProvider:
+            region: us-west-1
+            restApiIdSelector:
+              matchControllerRef: true
+              matchLabels:
+                infrastructure.example.org/api-mapping-label: rest-api-root
+    # This is the stage for the get rest API
+    - name: api-stage
+      base:
+        apiVersion: apigateway.aws.upbound.io/v1beta1
+        kind: Stage
+        spec:
+          forProvider:
+            deploymentIdSelector:
+              matchControllerRef: true
+              matchLabels:
+                infrastructure.example.org/api-mapping-label: deployment
+            region: us-west-1
+            restApiIdSelector:
+              matchControllerRef: true
+              matchLabels:
+                infrastructure.example.org/api-mapping-label: rest-api-root
+            stageName: production
+    # The CloudWatch Logs Log Group used by API Gateway for its log messages
+    - name: cloudwatch-logs
+      base:
+        apiVersion: cloudwatchlogs.aws.upbound.io/v1beta1
+        kind: Group
+        metadata:
+          name: aws-apigateway-AccessLog-stack-api
+        spec:
+          forProvider:
+            region: us-west-1
+            retentionInDays: 365
+    # The Rest API of the GET method to hook up to this function (/)
+    - name: lambda-restapi-root
+      base:
+        apiVersion: apigateway.aws.upbound.io/v1beta1
+        kind: RestAPI
+        metadata:
+          labels:
+            infrastructure.example.org/api-mapping-label: rest-api-root
+        spec:
+          forProvider:
+            description: This is my API for the get function
+            name: stack-get-api
+            region: us-west-1
+      patches:
+        - type: ToCompositeFieldPath
+          fromFieldPath: status.atProvider.id
+          toFieldPath: status.apiRootId
+          policy:
+            fromFieldPath: Required
+    # This is the API resource definition of the API /item
+    - name: lambda-apigw-resource
+      base:
+        apiVersion: apigateway.aws.upbound.io/v1beta1
+        kind: Resource
+        metadata:
+          labels:
+            infrastructure.example.org/api-item: resource-item
+        spec:
+          forProvider:
+            region: us-west-1
+            pathPart: "item"
+            restApiIdSelector:
+              matchControllerRef: true
+              matchLabels:
+                infrastructure.example.org/api-mapping-label: rest-api-root
+            parentIdSelector:
+              matchControllerRef: true
+              matchLabels:
+                infrastructure.example.org/api-mapping-label: rest-api-root
+      patches:
+        - type: ToCompositeFieldPath
+          fromFieldPath: status.atProvider.id
+          toFieldPath: status.resourceItemId
+          policy:
+            fromFieldPath: Required
+    # This is the API resource definition of the API /item/{id}
+    - name: lambda-apigw-resource-2
+      base:
+        apiVersion: apigateway.aws.upbound.io/v1beta1
+        kind: Resource
+        metadata:
+          labels:
+            infrastructure.example.org/api-item: resource-item-id 
+        spec:
+          forProvider:
+            region: us-west-1
+            pathPart: "{id}"
+            restApiIdSelector:
+              matchControllerRef: true
+              matchLabels:
+                infrastructure.example.org/api-mapping-label: rest-api-root
+      patches:
+        - type: ToCompositeFieldPath
+          fromFieldPath: status.atProvider.id
+          toFieldPath: status.resourceItemAtId
+          policy:
+            fromFieldPath: Required
+        - fromFieldPath: status.resourceItemId
+          toFieldPath: spec.forProvider.parentId
+    # This is the API resource definition of the API /item/{id}/done
+    - name: lambda-apigw-resource-3
+      base:
+        apiVersion: apigateway.aws.upbound.io/v1beta1
+        kind: Resource
+        metadata:
+          labels:
+            infrastructure.example.org/api-item: resource-item-id-done 
+        spec:
+          forProvider:
+            region: us-west-1
+            pathPart: "done"
+            restApiIdSelector:
+              matchControllerRef: true
+              matchLabels:
+                infrastructure.example.org/api-mapping-label: rest-api-root
+      patches:
+        - type: ToCompositeFieldPath
+          fromFieldPath: status.atProvider.id
+          toFieldPath: status.resourceItemAtDoneId
+          policy:
+            fromFieldPath: Required
+        - fromFieldPath: status.resourceItemAtId
+          toFieldPath: spec.forProvider.parentId
+    # This is the authorizer for the gateway
+    - name: lambda-get-authorizer
+      base:
+        apiVersion: apigateway.aws.upbound.io/v1beta1
+        kind: Authorizer
+        metadata:
+          labels:
+            infrastructure.example.org/api-mapping-label: authorizer
+        spec:
+          forProvider:
+            authorizerCredentialsSelector:
+              matchControllerRef: true
+              matchLabels:
+                infrastructure.example.org/iam-role: authorizer-role
+            name: cognito-authorizer
+            type: COGNITO_USER_POOLS 
+            providerArns: 
+              - user-pool-arns
+            region: us-west-1
+      patches:
+        - fromFieldPath: spec.userPoolArn
+          toFieldPath: spec.forProvider.providerArns[0]
+        - fromFieldPath: status.apiRootId
+          toFieldPath: spec.forProvider.restApiId
+        - type: ToCompositeFieldPath
+          fromFieldPath: status.atProvider.id
+          toFieldPath: status.authorizerId
+          policy:
+            fromFieldPath: Required
+    # This is the IAM role for authorizer to assume
+    - name: authorizer-role
+      base:
+        apiVersion: iam.aws.upbound.io/v1beta1
+        kind: Role
+        metadata:
+          labels:
+            infrastructure.example.org/iam-role: authorizer-role
+        spec:
+          forProvider:
+            description: "Role for an API gateway authorizer to Lambda function"
+            assumeRolePolicy: |
+              {
+                "Version": "2012-10-17",
+                "Statement": [
+                  {
+                    "Effect": "Allow",
+                    "Principal": {
+                      "Service": ["apigateway.amazonaws.com"]
+                    },
+                    "Action": "sts:AssumeRole"
+                  }
+                ]
+              }
+    # an IAM policy for Amplify
+    - name: authorizer-role-policy
+      base:
+        apiVersion: iam.aws.upbound.io/v1beta1
+        kind: Policy
+        metadata:
+          labels:
+            infrastructure.example.org/iam-role: authorizer-role-policy
+        spec:
+          forProvider:
+            policy: |
+              {
+                "Version": "2012-10-17",
+                "Statement": [
+                  {
+                    "Action": ["lambda:InvokeFunction"],
+                    "Effect": "Allow",
+                    "Resource": "*"
+                  }
+                ]
+              }
+    # An IAM rolepolicy attachment to stitch role + policy together
+    - name: authorizer-rpa
+      base:
+        apiVersion: iam.aws.upbound.io/v1beta1
+        kind: RolePolicyAttachment
+        spec:
+          forProvider:
+            policyArnSelector:
+              matchControllerRef: true
+              matchLabels:
+                infrastructure.example.org/iam-role: authorizer-role-policy
+            roleSelector:
+              matchControllerRef: true
+              matchLabels:
+                infrastructure.example.org/iam-role: authorizer-role

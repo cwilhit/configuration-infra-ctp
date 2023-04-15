@@ -1,0 +1,43 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: CompositeResourceDefinition
+metadata:
+  name: xcompositegateways.infrastructure.example.org
+spec:
+  group: infrastructure.example.org
+  names:
+    kind: XCompositeGateway
+    plural: xcompositegateways
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                userPoolArn:
+                  type: string
+                  description: "ARN of the cognito user pool"
+            required:
+              - userPoolArn
+            status:
+              type: object
+              properties:
+                apiRootId:
+                  type: string
+                  description: "The ID of the root of the rest API"
+                resourceItemId:
+                  type: string
+                  description: "The ID of the /item resource"
+                resourceItemAtId:
+                  type: string
+                  description: "The ID of the /item/{id} resource"
+                resourceItemAtDoneId:
+                  type: string
+                  description: "The ID of the /item/{id}/done resource"
+                authorizerId:
+                  type: string
+                  description: "The ID of the cognito user pool authorizer"
