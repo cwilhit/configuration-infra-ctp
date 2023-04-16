@@ -9,6 +9,26 @@ spec:
     apiVersion: infrastructure.example.org/v1alpha1
     kind: XServerlessApp
   resources:
+    # The amplify XR
+    - name: amplify
+      base: 
+        apiVersion: infrastructure.example.org/v1alpha1
+        kind: XCompositeAmplify
+        spec: {}
+      patches:
+        - type: FromCompositeFieldPath
+          fromFieldPath: spec.parameters.repository
+          toFieldPath: spec.repository
+        - type: ToCompositeFieldPath
+          fromFieldPath: status.domain
+          toFieldPath: status.domain
+          policy:
+            fromFieldPath: Required
+        - type: ToCompositeFieldPath
+          fromFieldPath: status.branchName
+          toFieldPath: status.branchName
+          policy:
+            fromFieldPath: Required
     # The cognito user pool XR
     - name: cognito
       base: 
@@ -90,216 +110,196 @@ spec:
           fromFieldPath: status.apiResourceIds.authorizerId
           toFieldPath: spec.apiConfig.authorizerId
     # The Lambda /item Post Function
-    - name: lambda-item-post
-      base: 
-        apiVersion: infrastructure.example.org/v1alpha1
-        kind: XCompositeFunction
-        spec:
-          parameters:
-            key: AddTodoFunction.zip
-            handler: app.addToDoItem
-          apiConfig:
-            httpMethod: POST
-      patches:
-        - type: FromCompositeFieldPath
-          fromFieldPath: spec.parameters.location
-          toFieldPath: spec.parameters.location
-        - type: FromCompositeFieldPath
-          fromFieldPath: status.eventSourceArn
-          toFieldPath: spec.parameters.tableName
-        - type: FromCompositeFieldPath
-          fromFieldPath: status.userPoolArn
-          toFieldPath: spec.userPoolArn
-        - type: FromCompositeFieldPath
-          fromFieldPath: status.apiResourceIds.apiRootId
-          toFieldPath: spec.apiConfig.apiRootId
-        - type: FromCompositeFieldPath
-          fromFieldPath: status.apiResourceIds.apiRootId
-          toFieldPath: spec.apiConfig.apiParentId
-        - type: FromCompositeFieldPath
-          fromFieldPath: status.apiResourceIds.authorizerId
-          toFieldPath: spec.apiConfig.authorizerId
-    # The Lambda /item/{id} Get Function
-    - name: lambda-item-id-get
-      base: 
-        apiVersion: infrastructure.example.org/v1alpha1
-        kind: XCompositeFunction
-        spec:
-          parameters:
-            key: GetTodoFunction.zip
-            handler: app.getToDoItem
-          apiConfig:
-            httpMethod: GET
-      patches:
-        - type: FromCompositeFieldPath
-          fromFieldPath: spec.parameters.location
-          toFieldPath: spec.parameters.location
-        - type: FromCompositeFieldPath
-          fromFieldPath: status.eventSourceArn
-          toFieldPath: spec.parameters.tableName
-        - type: FromCompositeFieldPath
-          fromFieldPath: status.userPoolArn
-          toFieldPath: spec.userPoolArn
-        - type: FromCompositeFieldPath
-          fromFieldPath: status.apiResourceIds.apiRootId
-          toFieldPath: spec.apiConfig.apiRootId
-        - type: FromCompositeFieldPath
-          fromFieldPath: status.apiResourceIds.resourceItemId
-          toFieldPath: spec.apiConfig.apiParentId
-        - type: FromCompositeFieldPath
-          fromFieldPath: status.apiResourceIds.authorizerId
-          toFieldPath: spec.apiConfig.authorizerId
-    # The Lambda /item/{id} Put Function
-    - name: lambda-item-id-put
-      base: 
-        apiVersion: infrastructure.example.org/v1alpha1
-        kind: XCompositeFunction
-        spec:
-          parameters:
-            key: UpdateTodoFunction.zip
-            handler: app.updateToDoItem
-          apiConfig:
-            httpMethod: PUT
-      patches:
-        - type: FromCompositeFieldPath
-          fromFieldPath: spec.parameters.location
-          toFieldPath: spec.parameters.location
-        - type: FromCompositeFieldPath
-          fromFieldPath: status.eventSourceArn
-          toFieldPath: spec.parameters.tableName
-        - type: FromCompositeFieldPath
-          fromFieldPath: status.userPoolArn
-          toFieldPath: spec.userPoolArn
-        - type: FromCompositeFieldPath
-          fromFieldPath: status.apiResourceIds.apiRootId
-          toFieldPath: spec.apiConfig.apiRootId
-        - type: FromCompositeFieldPath
-          fromFieldPath: status.apiResourceIds.resourceItemId
-          toFieldPath: spec.apiConfig.apiParentId
-        - type: FromCompositeFieldPath
-          fromFieldPath: status.apiResourceIds.authorizerId
-          toFieldPath: spec.apiConfig.authorizerId
-    # The Lambda /item/{id} Delete Function
-    - name: lambda-item-id-delete
-      base: 
-        apiVersion: infrastructure.example.org/v1alpha1
-        kind: XCompositeFunction
-        spec:
-          parameters:
-            key: DeleteTodoFunction.zip
-            handler: app.deleteToDoItem
-          apiConfig:
-            httpMethod: DELETE
-      patches:
-        - type: FromCompositeFieldPath
-          fromFieldPath: spec.parameters.location
-          toFieldPath: spec.parameters.location
-        - type: FromCompositeFieldPath
-          fromFieldPath: status.eventSourceArn
-          toFieldPath: spec.parameters.tableName
-        - type: FromCompositeFieldPath
-          fromFieldPath: status.userPoolArn
-          toFieldPath: spec.userPoolArn
-        - type: FromCompositeFieldPath
-          fromFieldPath: status.apiResourceIds.apiRootId
-          toFieldPath: spec.apiConfig.apiRootId
-        - type: FromCompositeFieldPath
-          fromFieldPath: status.apiResourceIds.resourceItemId
-          toFieldPath: spec.apiConfig.apiParentId
-        - type: FromCompositeFieldPath
-          fromFieldPath: status.apiResourceIds.authorizerId
-          toFieldPath: spec.apiConfig.authorizerId
-    # The Lambda /item/{id}/done Post Function
-    - name: lambda-item-id-done-post
-      base: 
-        apiVersion: infrastructure.example.org/v1alpha1
-        kind: XCompositeFunction
-        spec:
-          parameters:
-            key: CompleteTodoFunction.zip
-            handler: app.completeToDoItem
-          apiConfig:
-            httpMethod: POST
-      patches:
-        - type: FromCompositeFieldPath
-          fromFieldPath: spec.parameters.location
-          toFieldPath: spec.parameters.location
-        - type: FromCompositeFieldPath
-          fromFieldPath: status.eventSourceArn
-          toFieldPath: spec.parameters.tableName
-        - type: FromCompositeFieldPath
-          fromFieldPath: status.userPoolArn
-          toFieldPath: spec.userPoolArn
-        - type: FromCompositeFieldPath
-          fromFieldPath: status.apiResourceIds.apiRootId
-          toFieldPath: spec.apiConfig.apiRootId
-        - type: FromCompositeFieldPath
-          fromFieldPath: status.apiResourceIds.resourceItemAtId
-          toFieldPath: spec.apiConfig.apiParentId
-        - type: FromCompositeFieldPath
-          fromFieldPath: status.apiResourceIds.authorizerId
-          toFieldPath: spec.apiConfig.authorizerId
-    # The amplify XR
-    - name: amplify
-      base: 
-        apiVersion: infrastructure.example.org/v1alpha1
-        kind: XCompositeAmplify
-        spec: {}
-      patches:
-        - type: FromCompositeFieldPath
-          fromFieldPath: spec.parameters.repository
-          toFieldPath: spec.repository
-        - type: ToCompositeFieldPath
-          fromFieldPath: status.domain
-          toFieldPath: status.domain
-          policy:
-            fromFieldPath: Required
-        - type: ToCompositeFieldPath
-          fromFieldPath: status.branchName
-          toFieldPath: status.branchName
-          policy:
-            fromFieldPath: Required
-    # The DynamoDB table used to hold all the ToDo items for all users
-    - name: dynamo-table
-      base:
-        apiVersion: dynamodb.aws.upbound.io/v1beta1
-        kind: Table
-        metadata:
-          annotations:
-            crossplane.io/external-name: dbtable
-          name: dbtable
-        spec:
-          forProvider:
-            attribute:
-              - name: cognito-username
-                type: S
-              - name: id
-                type: S
-            hashKey: cognito-username
-            rangeKey: id
-            readCapacity: 1
-            region: us-west-1
-            writeCapacity: 1
-            serverSideEncryption: 
-              - enabled: true
-            billingMode: PROVISIONED
-            streamEnabled: true
-            streamViewType: NEW_AND_OLD_IMAGES
-            readCapacity: 5
-            writeCapacity: 5
-      patches:
-        - type: FromCompositeFieldPath
-          fromFieldPath: spec.parameters.id
-          toFieldPath: spec.metadata.name
-          transforms:
-            - type: string
-              string:
-                fmt: "%s-dbtable"
-        - type: ToCompositeFieldPath
-          fromFieldPath: status.atProvider.streamArn
-          toFieldPath: status.eventSourceArn
-          policy:
-            fromFieldPath: Required
+    # - name: lambda-item-post
+    #   base: 
+    #     apiVersion: infrastructure.example.org/v1alpha1
+    #     kind: XCompositeFunction
+    #     spec:
+    #       parameters:
+    #         key: AddTodoFunction.zip
+    #         handler: app.addToDoItem
+    #       apiConfig:
+    #         httpMethod: POST
+    #   patches:
+    #     - type: FromCompositeFieldPath
+    #       fromFieldPath: spec.parameters.location
+    #       toFieldPath: spec.parameters.location
+    #     - type: FromCompositeFieldPath
+    #       fromFieldPath: status.eventSourceArn
+    #       toFieldPath: spec.parameters.tableName
+    #     - type: FromCompositeFieldPath
+    #       fromFieldPath: status.userPoolArn
+    #       toFieldPath: spec.userPoolArn
+    #     - type: FromCompositeFieldPath
+    #       fromFieldPath: status.apiResourceIds.apiRootId
+    #       toFieldPath: spec.apiConfig.apiRootId
+    #     - type: FromCompositeFieldPath
+    #       fromFieldPath: status.apiResourceIds.apiRootId
+    #       toFieldPath: spec.apiConfig.apiParentId
+    #     - type: FromCompositeFieldPath
+    #       fromFieldPath: status.apiResourceIds.authorizerId
+    #       toFieldPath: spec.apiConfig.authorizerId
+    # # The Lambda /item/{id} Get Function
+    # - name: lambda-item-id-get
+    #   base: 
+    #     apiVersion: infrastructure.example.org/v1alpha1
+    #     kind: XCompositeFunction
+    #     spec:
+    #       parameters:
+    #         key: GetTodoFunction.zip
+    #         handler: app.getToDoItem
+    #       apiConfig:
+    #         httpMethod: GET
+    #   patches:
+    #     - type: FromCompositeFieldPath
+    #       fromFieldPath: spec.parameters.location
+    #       toFieldPath: spec.parameters.location
+    #     - type: FromCompositeFieldPath
+    #       fromFieldPath: status.eventSourceArn
+    #       toFieldPath: spec.parameters.tableName
+    #     - type: FromCompositeFieldPath
+    #       fromFieldPath: status.userPoolArn
+    #       toFieldPath: spec.userPoolArn
+    #     - type: FromCompositeFieldPath
+    #       fromFieldPath: status.apiResourceIds.apiRootId
+    #       toFieldPath: spec.apiConfig.apiRootId
+    #     - type: FromCompositeFieldPath
+    #       fromFieldPath: status.apiResourceIds.resourceItemId
+    #       toFieldPath: spec.apiConfig.apiParentId
+    #     - type: FromCompositeFieldPath
+    #       fromFieldPath: status.apiResourceIds.authorizerId
+    #       toFieldPath: spec.apiConfig.authorizerId
+    # # The Lambda /item/{id} Put Function
+    # - name: lambda-item-id-put
+    #   base: 
+    #     apiVersion: infrastructure.example.org/v1alpha1
+    #     kind: XCompositeFunction
+    #     spec:
+    #       parameters:
+    #         key: UpdateTodoFunction.zip
+    #         handler: app.updateToDoItem
+    #       apiConfig:
+    #         httpMethod: PUT
+    #   patches:
+    #     - type: FromCompositeFieldPath
+    #       fromFieldPath: spec.parameters.location
+    #       toFieldPath: spec.parameters.location
+    #     - type: FromCompositeFieldPath
+    #       fromFieldPath: status.eventSourceArn
+    #       toFieldPath: spec.parameters.tableName
+    #     - type: FromCompositeFieldPath
+    #       fromFieldPath: status.userPoolArn
+    #       toFieldPath: spec.userPoolArn
+    #     - type: FromCompositeFieldPath
+    #       fromFieldPath: status.apiResourceIds.apiRootId
+    #       toFieldPath: spec.apiConfig.apiRootId
+    #     - type: FromCompositeFieldPath
+    #       fromFieldPath: status.apiResourceIds.resourceItemId
+    #       toFieldPath: spec.apiConfig.apiParentId
+    #     - type: FromCompositeFieldPath
+    #       fromFieldPath: status.apiResourceIds.authorizerId
+    #       toFieldPath: spec.apiConfig.authorizerId
+    # # The Lambda /item/{id} Delete Function
+    # - name: lambda-item-id-delete
+    #   base: 
+    #     apiVersion: infrastructure.example.org/v1alpha1
+    #     kind: XCompositeFunction
+    #     spec:
+    #       parameters:
+    #         key: DeleteTodoFunction.zip
+    #         handler: app.deleteToDoItem
+    #       apiConfig:
+    #         httpMethod: DELETE
+    #   patches:
+    #     - type: FromCompositeFieldPath
+    #       fromFieldPath: spec.parameters.location
+    #       toFieldPath: spec.parameters.location
+    #     - type: FromCompositeFieldPath
+    #       fromFieldPath: status.eventSourceArn
+    #       toFieldPath: spec.parameters.tableName
+    #     - type: FromCompositeFieldPath
+    #       fromFieldPath: status.userPoolArn
+    #       toFieldPath: spec.userPoolArn
+    #     - type: FromCompositeFieldPath
+    #       fromFieldPath: status.apiResourceIds.apiRootId
+    #       toFieldPath: spec.apiConfig.apiRootId
+    #     - type: FromCompositeFieldPath
+    #       fromFieldPath: status.apiResourceIds.resourceItemId
+    #       toFieldPath: spec.apiConfig.apiParentId
+    #     - type: FromCompositeFieldPath
+    #       fromFieldPath: status.apiResourceIds.authorizerId
+    #       toFieldPath: spec.apiConfig.authorizerId
+    # # The Lambda /item/{id}/done Post Function
+    # - name: lambda-item-id-done-post
+    #   base: 
+    #     apiVersion: infrastructure.example.org/v1alpha1
+    #     kind: XCompositeFunction
+    #     spec:
+    #       parameters:
+    #         key: CompleteTodoFunction.zip
+    #         handler: app.completeToDoItem
+    #       apiConfig:
+    #         httpMethod: POST
+    #   patches:
+    #     - type: FromCompositeFieldPath
+    #       fromFieldPath: spec.parameters.location
+    #       toFieldPath: spec.parameters.location
+    #     - type: FromCompositeFieldPath
+    #       fromFieldPath: status.eventSourceArn
+    #       toFieldPath: spec.parameters.tableName
+    #     - type: FromCompositeFieldPath
+    #       fromFieldPath: status.userPoolArn
+    #       toFieldPath: spec.userPoolArn
+    #     - type: FromCompositeFieldPath
+    #       fromFieldPath: status.apiResourceIds.apiRootId
+    #       toFieldPath: spec.apiConfig.apiRootId
+    #     - type: FromCompositeFieldPath
+    #       fromFieldPath: status.apiResourceIds.resourceItemAtId
+    #       toFieldPath: spec.apiConfig.apiParentId
+    #     - type: FromCompositeFieldPath
+    #       fromFieldPath: status.apiResourceIds.authorizerId
+    #       toFieldPath: spec.apiConfig.authorizerId
+    # # The DynamoDB table used to hold all the ToDo items for all users
+    # - name: dynamo-table
+    #   base:
+    #     apiVersion: dynamodb.aws.upbound.io/v1beta1
+    #     kind: Table
+    #     metadata:
+    #       annotations:
+    #         crossplane.io/external-name: dbtable
+    #       name: dbtable
+    #     spec:
+    #       forProvider:
+    #         attribute:
+    #           - name: cognito-username
+    #             type: S
+    #           - name: id
+    #             type: S
+    #         hashKey: cognito-username
+    #         rangeKey: id
+    #         readCapacity: 1
+    #         region: us-west-1
+    #         writeCapacity: 1
+    #         serverSideEncryption: 
+    #           - enabled: true
+    #         billingMode: PROVISIONED
+    #         streamEnabled: true
+    #         streamViewType: NEW_AND_OLD_IMAGES
+    #         readCapacity: 5
+    #         writeCapacity: 5
+    #   patches:
+    #     - type: FromCompositeFieldPath
+    #       fromFieldPath: spec.parameters.id
+    #       toFieldPath: spec.metadata.name
+    #       transforms:
+    #         - type: string
+    #           string:
+    #             fmt: "%s-dbtable"
+    #     - type: ToCompositeFieldPath
+    #       fromFieldPath: status.atProvider.streamArn
+    #       toFieldPath: status.eventSourceArn
+    #       policy:
+    #         fromFieldPath: Required
     # The bucket (already exists, we are bringing it under management by XP) hosting the Lambda functions
     - name: src-bucket
       base:

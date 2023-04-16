@@ -21,13 +21,6 @@ spec:
             spec:
               type: object
               properties:
-                id:
-                  type: string
-                  description: "ID of this Function that objects will use to refer to it."
-                  minLength: 1
-                  # Maximum key length in GCP is 40 characters. We are setting a 34 character
-                  # limit to accomodate the generated hash suffix ('-' + 5 chars).
-                  maxLength: 34
                 parameters:
                   type: object
                   description: "Function parameters."
@@ -38,9 +31,6 @@ spec:
                       enum:
                         - 'East US'
                         - 'West US'
-                    image:
-                      type: string
-                      description: "The container image to execute inside the function"
                     repository:
                       type: string
                       description: "The repository where the app source code is hosted"
@@ -49,11 +39,9 @@ spec:
                       description: "The unique name of the S3 bucket hosting the lambda source"
                   required:
                     - location
-                    - image
                     - repository
                     - lambdaBucket
               required:
-                - id
                 - parameters
             status:
               type: object

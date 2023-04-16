@@ -37,10 +37,6 @@ spec:
                       type: string
                       description: "The entrypoint of the Function execution"
                   required:
-                    - location
-                    - tableName
-                    - key
-                    - handler
                 apiConfig:
                   type: object
                   properties: 
@@ -56,18 +52,12 @@ spec:
                     authorizerId:
                       type: string
                       description: "The ID of the cognito user pool authorizer"
-                  required:
-                    - httpMethod
-                    - apiRootId
-                    - apiParentId
-                    - authorizerId
                 userPoolArn:
                   type: string
                   description: "The ARN for the Cognito user pool associated with this function"
               required:
                 - parameters
                 - apiConfig
-                - userPoolArn
             status:
               type: object
               properties:

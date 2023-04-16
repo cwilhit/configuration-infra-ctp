@@ -21,8 +21,6 @@ spec:
                 repository:
                   type: string
                   description: "The repository where the app source code is hosted"
-              required:
-                - repository
             status:
               type: object
               properties:

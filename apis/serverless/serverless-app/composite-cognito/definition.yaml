@@ -24,9 +24,6 @@ spec:
                 domain:
                   type: string
                   description: "The domain created for the frontend amplify app"
-              required:
-                - branchName
-                - domain
             status:
               type: object
               properties:

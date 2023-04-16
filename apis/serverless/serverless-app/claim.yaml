@@ -1,18 +1,13 @@
 apiVersion: infrastructure.example.org/v1alpha1
 kind: ServerlessApp
 metadata:
-  name: craig-stack-13
+  name: craig-stack
   namespace: default
 spec:
-  id: craig-stack-13
   parameters:
-    image: 'null'
     location: West US
     repository: https://github.com/cwilhit/lambda-refarch-webapp/
     lambdaBucket: craig-stack-lambda-bucket
-  compositionSelector:
-    matchLabels:
-      provider: aws
 
 
 # const config = {
