@@ -1,0 +1,56 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: CompositeResourceDefinition
+metadata:
+  name: xfunctions.infrastructure.example.org
+spec:
+  group: infrastructure.example.org
+  names:
+    kind: XFunction
+    plural: xfunctions
+  claimNames:
+    kind: Function
+    plural: functions
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                id:
+                  type: string
+                  description: "ID of this Function that objects will use to refer to it."
+                  minLength: 1
+                  # Maximum key length in GCP is 40 characters. We are setting a 34 character
+                  # limit to accomodate the generated hash suffix ('-' + 5 chars).
+                  maxLength: 34
+                parameters:
+                  type: object
+                  description: "Function parameters."
+                  properties:
+                    location:
+                      type: string
+                      description: "Zone or region for the Function (default: `us-west1-c`)"
+                      enum:
+                        - 'East US'
+                        - 'West US'
+                    image:
+                      type: string
+                      description: "The container image to execute inside the function"
+                  required:
+                    - location
+                    - image
+              required:
+                - id
+                - parameters
+            status:
+              type: object
+              properties:
+                subnetIds:
+                  type: array
+                  items:
+                    type: string

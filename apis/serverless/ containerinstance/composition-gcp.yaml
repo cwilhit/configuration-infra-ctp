@@ -1,0 +1,32 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: gcp.xcontainerinstances.infrastructure.example.org
+  labels:
+    provider: gcp
+spec:
+  compositeTypeRef:
+    apiVersion: infrastructure.example.org/v1alpha1
+    kind: XContainer
+  resources:
+    - base:
+        apiVersion: cloudrun.gcp.upbound.io/v1beta1
+        kind: V2Job
+        spec:
+          forProvider:
+            launchStage: GA
+            location: us-central1 # patched
+            template:
+              - template:
+                  - containers:
+                      - image: us-docker.pkg.dev/cloudrun/container/hello # patched
+      patches:
+        - fromFieldPath: spec.parameters.location
+          toFieldPath: spec.forProvider.location
+          transforms:
+            - type: map
+              map:
+                'East US': 'us-east1'
+                'West US': 'us-west1'
+        - fromFieldPath: spec.parameters.image
+          toFieldPath: spec.forProvider.template[0].template[0].containers[0].image

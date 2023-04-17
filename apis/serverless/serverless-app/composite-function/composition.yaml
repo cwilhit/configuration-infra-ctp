@@ -58,6 +58,7 @@ spec:
                 infrastructure.example.org/bucket-src: bucket-src
             s3Key: function.zip
             roleSelector:
+              matchControllerRef: true
               matchLabels:
                 infrastructure.example.org/iam-role: function-role
       patches:
@@ -115,6 +116,32 @@ spec:
           toFieldPath: spec.forProvider.resourceId
         - fromFieldPath: spec.apiConfig.authorizerId
           toFieldPath: spec.forProvider.authorizerId
+    - name: lambda-apigw-methodresponse
+      base:
+        apiVersion: apigateway.aws.upbound.io/v1beta1
+        kind: MethodResponse
+        metadata:
+          labels:
+            infrastructure.example.org/api-item: methodResponse 
+        spec:
+          forProvider:
+            httpMethodSelector:
+              matchControllerRef: true
+              matchLabels:
+                infrastructure.example.org/api-item: method 
+            region: us-west-1
+            statusCode: "200"
+            responseModels:
+              application/json: Empty
+            responseParameters:
+              method.response.header.Access-Control-Allow-Origin: true
+            #   method.response.header.Access-Control-Allow-Headers: "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token"
+            #   method.response.header.Access-Control-Allow-Methods: "OPTIONS,HEAD,GET,PUT,POST,DELETE"
+      patches:
+        - fromFieldPath: spec.apiConfig.apiRootId
+          toFieldPath: spec.forProvider.restApiId
+        - fromFieldPath: spec.apiConfig.apiParentId
+          toFieldPath: spec.forProvider.resourceId
     # This makes the API available for consumption by Functions
     - name: lambda-integration
       base:

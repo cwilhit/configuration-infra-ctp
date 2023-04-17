@@ -21,8 +21,6 @@ spec:
                 userPoolArn:
                   type: string
                   description: "ARN of the cognito user pool"
-            required:
-              - userPoolArn
             status:
               type: object
               properties:

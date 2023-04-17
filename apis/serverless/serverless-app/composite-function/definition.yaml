@@ -22,11 +22,11 @@ spec:
                   type: object
                   properties:
                     location:
-                          type: string
-                          description: "Zone or region for the Function (default: `us-west1-c`)"
-                          enum:
-                            - 'East US'
-                            - 'West US'
+                      type: string
+                      description: "Zone or region for the Function (default: `us-west1-c`)"
+                      enum:
+                        - 'East US'
+                        - 'West US'
                     tableName:
                       type: string
                       description: "The name of the DynamoDB table source being used with this Function"
@@ -36,7 +36,6 @@ spec:
                     handler:
                       type: string
                       description: "The entrypoint of the Function execution"
-                  required:
                 apiConfig:
                   type: object
                   properties: 
